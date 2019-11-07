@@ -9,7 +9,7 @@ public class MatrixController : MonoBehaviour
     public TMP_InputField sizeInputField;
     public Transform content;
     public GameObject rowPrefab, fieldPrefab;
-    public Button calculateButton, randomizeButton;
+    public Button calculateButton, randomizeButton, exitButton;
 
     private SquareMatrix matrixA, matrixB, matrixC;
 
@@ -29,6 +29,11 @@ public class MatrixController : MonoBehaviour
         {
             matrixA.Randomize();
             matrixB.Randomize();
+        });
+
+        exitButton.onClick.AddListener(() =>
+        {
+            Application.Quit();
         });
     }
 
