@@ -41,24 +41,24 @@ void func(int sockfd) {
 // Driver function
 int main() {
   int sockfd, connfd, len;
-  struct sockaddr_in servaddr, cli;
+  struct sockaddr_in saddr, caddr;
 
   // socket create and verification
-  sockfd = socket(AF_INET, SOCK_STREAM, 0);
+  sockfd = socket(PF_INET, SOCK_STREAM, 0);
   if (sockfd == -1) {
     printf("socket creation failed...\n");
     exit(0);
   } else
     printf("Socket successfully created..\n");
-  bzero(&servaddr, sizeof(servaddr));
+  bzero(&saddr, sizeof(saddr));  // memory clearing
 
   // assign IP, PORT
-  servaddr.sin_family = AF_INET;
-  servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-  servaddr.sin_port = htons(PORT);
+  saddr.sin_family = AF_INET;
+  saddr.sin_addr.s_addr = htons(INADDR_ANY);
+  saddr.sin_port = htons(PORT);
 
   // Binding newly created socket to given IP and verification
-  if ((bind(sockfd, (SA*)&servaddr, sizeof(servaddr))) != 0) {
+  if ((bind(sockfd, (SA*)&saddr, sizeof(saddr))) != 0) {
     printf("socket bind failed...\n");
     exit(0);
   } else
@@ -70,10 +70,10 @@ int main() {
     exit(0);
   } else
     printf("Server listening..\n");
-  len = sizeof(cli);
+  len = sizeof(caddr);
 
   // Accept the data packet from client and verification
-  connfd = accept(sockfd, (SA*)&cli, &len);
+  connfd = accept(sockfd, (SA*)&caddr, &len);
   if (connfd < 0) {
     printf("server acccept failed...\n");
     exit(0);
@@ -85,4 +85,5 @@ int main() {
 
   // After chatting close the socket
   close(sockfd);
+  return 0;
 }
