@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics;
-using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -39,7 +38,8 @@ public class MatrixController : MonoBehaviour
 
     private void Fill(int size)
     {
-        size = Mathf.Clamp(size, 1, 10);
+        size = Mathf.Clamp(size, 1, 20);
+        sizeInputField.text = size.ToString();
         matrixA = new SquareMatrix(size);
         matrixB = new SquareMatrix(size);
         matrixC = new SquareMatrix(size);
@@ -106,6 +106,10 @@ public class MatrixController : MonoBehaviour
         p.StartInfo.UseShellExecute = false;
         p.StartInfo.RedirectStandardInput = true;
         p.StartInfo.RedirectStandardOutput = true;
+        p.StartInfo.RedirectStandardError = true;
+
+        p.OutputDataReceived += OnCout;
+        p.ErrorDataReceived += OnCerr;
 
         p.Start();
         p.StandardInput.WriteLine(matrixA.Size);
@@ -129,17 +133,38 @@ public class MatrixController : MonoBehaviour
         }
         p.StandardInput.Close();
 
+        xOut = 0;
+        yOut = 0;
+
+        p.BeginErrorReadLine();
+        p.BeginOutputReadLine();
+
+        //p.Close();
+
+        matrixC.Write();
+    }
+
+    private int xOut, yOut;
+
+    private void OnCout(object sender, DataReceivedEventArgs e)
+    {
+        UnityEngine.Debug.Log(e.Data);
+
+        /*
         for (int y = 0; y < matrixC.Size; y++)
         {
-            string line = p.StandardOutput.ReadLine();
+            string line = p.StandardError.ReadLine();
             double[] rowValues = line.Split(' ').Select(text => double.TryParse(text.Replace('.', ','), out double value) ? value : 0).ToArray();
             for (int x = 0; x < matrixC[y].Count; x++)
             {
                 matrixC[y][x] = rowValues[x];
             }
         }
-        p.Close();
+        */
+    }
 
-        matrixC.Write();
+    private void OnCerr(object sender, DataReceivedEventArgs e)
+    {
+        UnityEngine.Debug.LogError(e.Data);
     }
 }
