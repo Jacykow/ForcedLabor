@@ -9,10 +9,12 @@
 #include <sstream>
 #include <vector>
 
+#define vvd vector<vector<double>>
+#define vd vector<double>
+
 using namespace std;
 
-double multiply_field(int i, int j, vector<vector<double>> &a,
-                      vector<vector<double>> &b) {
+double multiply_field(int i, int j, vvd &a, vvd &b) {
   double result = 0;
   for (int k = 0; k < (int)a.size(); ++k) {
     result += a[i][k] * b[k][j];
@@ -20,26 +22,24 @@ double multiply_field(int i, int j, vector<vector<double>> &a,
   return result;
 }
 
-vector<double> multiply_row(int j, vector<vector<double>> &a,
-                            vector<vector<double>> &b) {
-  vector<double> res;
+vd multiply_row(int j, vvd &a, vvd &b) {
+  vd res;
   for (int i = 0; i < (int)a.size(); ++i) {
     res.push_back(multiply_field(i, j, a, b));
   }
   return res;
 }
 
-vector<vector<double>> matrix_multiplication(vector<vector<double>> &a,
-                                             vector<vector<double>> &b) {
+vvd matrix_multiplication(vvd &a, vvd &b) {
   int n = a.size();
-  vector<vector<double>> res(n, vector<double>(n));
+  vvd res(n, vd(n));
   for (int j = 0; j < (int)a.size(); ++j) {
     res[j] = (multiply_row(j, a, b));
   }
   return res;
 }
 
-vector<vector<double>> calculate_from_string(string strbuff) {
+vvd calculate_from_string(string strbuff) {
   cout << "Message size: " << strbuff.length() << endl;
   stringstream ss;
   double tmp;
@@ -48,16 +48,16 @@ vector<vector<double>> calculate_from_string(string strbuff) {
   ss >> matrix_size;
   cout << "matrix size value: " << matrix_size << endl;
 
-  vector<vector<double>> a, b, res;
+  vvd a, b, res;
   for (int j = 0; j < matrix_size; j++) {
-    a.push_back(vector<double>());
+    a.push_back(vd());
     for (int i = 0; i < matrix_size; i++) {
       ss >> tmp;
       a[j].push_back(tmp);
     }
   }
   for (int j = 0; j < matrix_size; j++) {
-    b.push_back(vector<double>());
+    b.push_back(vd());
     for (int i = 0; i < matrix_size; i++) {
       ss >> tmp;
       b[j].push_back(tmp);
@@ -68,7 +68,7 @@ vector<vector<double>> calculate_from_string(string strbuff) {
   return res;
 }
 
-string debug_vector(vector<vector<double>> vec) {
+string debug_vector(vvd vec) {
   string s = "";
   for (int j = 0; j < (int)vec.size(); j++) {
     for (int i = 0; i < (int)vec.size(); i++) {
@@ -129,7 +129,7 @@ int main() {
 
       string strbuff = buffer;
 
-      vector<vector<double>> res = calculate_from_string(strbuff);
+      vvd res = calculate_from_string(strbuff);
 
       string response = "";
       for (int j = 0; j < (int)res.size(); j++) {
