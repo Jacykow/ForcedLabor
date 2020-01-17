@@ -8,7 +8,10 @@ using namespace std;
 int main()
 {
     stringstream messageStream;
-    int matrixSize=0;
+    int matrixSize=0, port;
+    char ip[16];
+    cin>>ip;
+    cin>>port;
     cin>>matrixSize;
     messageStream<<matrixSize;
 
@@ -31,9 +34,9 @@ int main()
     WSAStartup(MAKEWORD(2,0), &WSAData);
     server = socket(AF_INET, SOCK_STREAM, 0);
 
-    addr.sin_addr.s_addr = inet_addr("192.168.0.26");
+    addr.sin_addr.s_addr = inet_addr(ip);
     addr.sin_family = AF_INET;
-    addr.sin_port = htons(8080);
+    addr.sin_port = htons(port);
 
     connect(server, (SOCKADDR *)&addr, sizeof(addr));
 

@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 public class MatrixController : MonoBehaviour
 {
-    public TMP_InputField sizeInputField;
+    public TMP_InputField sizeInputField, ipInputField, portInputField;
     public Transform content;
     public GameObject rowPrefab, fieldPrefab;
     public Button calculateButton, randomizeButton, exitButton;
@@ -21,6 +21,9 @@ public class MatrixController : MonoBehaviour
             Fill(int.Parse(text));
         });
 
+        ipInputField.text = "192.168.0.26";
+        portInputField.text = "8080";
+
         calculateButton.onClick.AddListener(() =>
         {
             Multiply();
@@ -28,6 +31,10 @@ public class MatrixController : MonoBehaviour
 
         randomizeButton.onClick.AddListener(() =>
         {
+            if (string.IsNullOrEmpty(sizeInputField.text))
+            {
+                Fill(Random.Range(1, 10));
+            }
             _matrixA.Randomize();
             _matrixB.Randomize();
         });
@@ -50,6 +57,11 @@ public class MatrixController : MonoBehaviour
     private void Fill(int size)
     {
         size = Mathf.Clamp(size, 1, 20);
+        if (_matrixC?.Size == size)
+        {
+            return;
+        }
+
         sizeInputField.text = size.ToString();
         _matrixA = new SquareMatrix(size);
         _matrixB = new SquareMatrix(size);
@@ -129,7 +141,10 @@ public class MatrixController : MonoBehaviour
         p.BeginOutputReadLine();
         p.BeginErrorReadLine();
 
+        p.StandardInput.WriteLine(ipInputField.text);
+        p.StandardInput.WriteLine(portInputField.text);
         p.StandardInput.WriteLine(_matrixA.Size);
+
         for (int y = 0; y < _matrixA.Size; y++)
         {
             for (int x = 0; x < _matrixA[y].Count; x++)
@@ -148,6 +163,7 @@ public class MatrixController : MonoBehaviour
             }
             p.StandardInput.WriteLine();
         }
+
         p.StandardInput.Close();
     }
 
