@@ -12,6 +12,7 @@ public class MatrixController : MonoBehaviour
 
     private SquareMatrix _matrixA, _matrixB, _matrixC;
     private int _yOut, _xOut;
+    private bool _writeResult = false;
 
     private void Start()
     {
@@ -35,6 +36,15 @@ public class MatrixController : MonoBehaviour
         {
             Application.Quit();
         });
+    }
+
+    private void Update()
+    {
+        if (_writeResult)
+        {
+            _matrixC.Write();
+            _writeResult = false;
+        }
     }
 
     private void Fill(int size)
@@ -111,7 +121,6 @@ public class MatrixController : MonoBehaviour
 
         p.OutputDataReceived += OnCout;
         p.ErrorDataReceived += OnCerr;
-        p.Exited += OnExit;
 
         p.Start();
 
@@ -142,11 +151,6 @@ public class MatrixController : MonoBehaviour
         p.StandardInput.Close();
     }
 
-    private void OnExit(object sender, System.EventArgs e)
-    {
-        _matrixC.Write();
-    }
-
     private void OnCout(object sender, DataReceivedEventArgs e)
     {
         if (e.Data == null)
@@ -163,6 +167,7 @@ public class MatrixController : MonoBehaviour
         _xOut++;
         if (_xOut >= _matrixC[_yOut].Count)
         {
+            _writeResult = true;
             _xOut = 0;
             _yOut++;
         }

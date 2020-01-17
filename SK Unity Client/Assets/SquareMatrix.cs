@@ -50,8 +50,13 @@ public class SquareMatrix : List<List<double>>
         {
             for (int x = 0; x < Size; x++)
             {
-                InputFields[y, x].text = this[y][x].ToString().Replace(',', '.');
+                Write(x, y);
             }
         }
+    }
+
+    public void Write(int x, int y)
+    {
+        InputFields[y, x].text = this[y][x].ToString().Replace(',', '.');
     }
 }
