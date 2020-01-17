@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics;
-using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -12,7 +11,7 @@ public class MatrixController : MonoBehaviour
     public Button calculateButton, randomizeButton, exitButton;
 
     private SquareMatrix _matrixA, _matrixB, _matrixC;
-    private int _yOut;
+    private int _yOut, _xOut;
 
     private void Start()
     {
@@ -112,8 +111,15 @@ public class MatrixController : MonoBehaviour
 
         p.OutputDataReceived += OnCout;
         p.ErrorDataReceived += OnCerr;
+        p.Exited += OnExit;
 
         p.Start();
+
+        _yOut = 0;
+        _xOut = 0;
+        p.BeginOutputReadLine();
+        p.BeginErrorReadLine();
+
         p.StandardInput.WriteLine(_matrixA.Size);
         for (int y = 0; y < _matrixA.Size; y++)
         {
@@ -134,12 +140,10 @@ public class MatrixController : MonoBehaviour
             p.StandardInput.WriteLine();
         }
         p.StandardInput.Close();
+    }
 
-        _yOut = 0;
-
-        p.BeginOutputReadLine();
-        p.BeginErrorReadLine();
-
+    private void OnExit(object sender, System.EventArgs e)
+    {
         _matrixC.Write();
     }
 
@@ -152,18 +156,15 @@ public class MatrixController : MonoBehaviour
 
         UnityEngine.Debug.Log(e.Data);
 
-        double[] rowValues = e.Data.Split(' ').Select(text => double.TryParse(text.Replace('.', ','), out double value) ? value : 0).ToArray();
-        for (int x = 0; x < _matrixC[_yOut].Count; x++)
-        {
-            _matrixC[_yOut][x] = rowValues[x];
-        }
-        _yOut++;
+        double rowValue = double.TryParse(e.Data.Replace('.', ','), out double value) ? value : 0;
 
-        _matrixC.Write();
+        _matrixC[_yOut][_xOut] = rowValue;
 
-        if (_yOut >= _matrixC.Count)
+        _xOut++;
+        if (_xOut >= _matrixC[_yOut].Count)
         {
-            ((Process)sender).Dispose();
+            _xOut = 0;
+            _yOut++;
         }
     }
 

@@ -56,15 +56,9 @@ int main()
 
     for(int x=0;x<matrixSize*matrixSize;x++){
         responseStream>>field;
-        if(x == 0){
-            cout<<field;
-        }else if(x%matrixSize==0){
-            cout<<endl<<field;
-        }else{
-            cout<<" "<<field;
-        }
+        cerr<<"here"<<endl;
+        cout<<field<<endl;
     }
-    cout<<endl;
 
     return 0;
 }
