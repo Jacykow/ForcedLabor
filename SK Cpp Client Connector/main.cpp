@@ -1,29 +1,67 @@
 #include <iostream>
+#include <winsock2.h>
+#include <sstream>
+#include <string>
 
 using namespace std;
 
 int main()
 {
-    int matrixSize;
+    stringstream messageStream;
+    int matrixSize=0, port;
+    char ip[16];
+    cin>>ip;
+    cin>>port;
     cin>>matrixSize;
-    double matrixA[matrixSize][matrixSize];
-    double matrixB[matrixSize][matrixSize];
-    for(int y=0;y<matrixSize;y++){
-        for(int x=0;x<matrixSize;x++){
-            cin>>matrixA[y][x];
+    messageStream<<matrixSize;
+
+    int matrixFieldAmount = matrixSize * matrixSize * 2;
+    double field;
+
+    for(int x=0;x<matrixFieldAmount;x++){
+        cin>>field;
+        if(x%matrixSize == 0 || x == 0){
+            messageStream<<endl<<field;
+        }else{
+            messageStream<<" "<<field;
         }
     }
-    for(int y=0;y<matrixSize;y++){
-        for(int x=0;x<matrixSize;x++){
-            cin>>matrixB[y][x];
-        }
+
+    WSADATA WSAData;
+    SOCKET server;
+    SOCKADDR_IN addr;
+
+    WSAStartup(MAKEWORD(2,0), &WSAData);
+    server = socket(AF_INET, SOCK_STREAM, 0);
+
+    addr.sin_addr.s_addr = inet_addr(ip);
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(port);
+
+    connect(server, (SOCKADDR *)&addr, sizeof(addr));
+
+    cerr<<"sending..."<<endl;
+
+    string bufferString = messageStream.str();
+    char buffer[1000000];
+    strcpy(buffer, bufferString.c_str());
+    send(server, buffer, sizeof(buffer), 0);
+
+    cerr<<"receiving..."<<endl;
+
+    char buffer2[1000000];
+    stringstream responseStream;
+    recv(server, buffer2, sizeof(buffer), 0);
+    responseStream<<buffer2;
+
+    closesocket(server);
+    WSACleanup();
+
+    for(int x=0;x<matrixSize*matrixSize;x++){
+        responseStream>>field;
+        cerr<<"here"<<endl;
+        cout<<field<<endl;
     }
-    for(int y=0;y<matrixSize;y++){
-        for(int x=0;x<matrixSize;x++){
-            if(x != 0)cout<<" ";
-            cout<<matrixA[y][x]+matrixB[y][x];
-        }
-        cout<<endl;
-    }
+
     return 0;
 }
