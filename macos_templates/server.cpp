@@ -3,10 +3,9 @@
 #include <omp.h>
 #include <string.h>
 #include <sys/socket.h>  // For socket functions
-#include <sys/time.h>
-#include <unistd.h>  // For read
-#include <cstdlib>   // For exit() and EXIT_FAILURE
-#include <iostream>  // For cout
+#include <unistd.h>      // For read
+#include <cstdlib>       // For exit() and EXIT_FAILURE
+#include <iostream>      // For cout
 #include <sstream>
 #include <vector>
 
