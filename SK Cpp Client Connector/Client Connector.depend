@@ -1,4 +1,7 @@
 # depslib dependency file v1.0
-1573147013 source:c:\users\user\desktop\projekt sk\sk cpp client connector\main.cpp
+1579298455 source:c:\users\user\desktop\projekt sk\sk cpp client connector\main.cpp
 	<iostream>
+	<winsock2.h>
+	<sstream>
+	<string>
 

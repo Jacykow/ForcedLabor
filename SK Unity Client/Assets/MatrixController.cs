@@ -1,17 +1,18 @@
 ﻿using System.Diagnostics;
-using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class MatrixController : MonoBehaviour
 {
-    public TMP_InputField sizeInputField;
+    public TMP_InputField sizeInputField, ipInputField, portInputField;
     public Transform content;
     public GameObject rowPrefab, fieldPrefab;
     public Button calculateButton, randomizeButton, exitButton;
 
-    private SquareMatrix matrixA, matrixB, matrixC;
+    private SquareMatrix _matrixA, _matrixB, _matrixC;
+    private int _yOut, _xOut;
+    private bool _writeResult = false;
 
     private void Start()
     {
@@ -20,6 +21,9 @@ public class MatrixController : MonoBehaviour
             Fill(int.Parse(text));
         });
 
+        ipInputField.text = "192.168.0.26";
+        portInputField.text = "8080";
+
         calculateButton.onClick.AddListener(() =>
         {
             Multiply();
@@ -27,8 +31,12 @@ public class MatrixController : MonoBehaviour
 
         randomizeButton.onClick.AddListener(() =>
         {
-            matrixA.Randomize();
-            matrixB.Randomize();
+            if (string.IsNullOrEmpty(sizeInputField.text))
+            {
+                Fill(Random.Range(1, 10));
+            }
+            _matrixA.Randomize();
+            _matrixB.Randomize();
         });
 
         exitButton.onClick.AddListener(() =>
@@ -37,12 +45,27 @@ public class MatrixController : MonoBehaviour
         });
     }
 
+    private void Update()
+    {
+        if (_writeResult)
+        {
+            _matrixC.Write();
+            _writeResult = false;
+        }
+    }
+
     private void Fill(int size)
     {
-        size = Mathf.Clamp(size, 1, 10);
-        matrixA = new SquareMatrix(size);
-        matrixB = new SquareMatrix(size);
-        matrixC = new SquareMatrix(size);
+        size = Mathf.Clamp(size, 1, 20);
+        if (_matrixC?.Size == size)
+        {
+            return;
+        }
+
+        sizeInputField.text = size.ToString();
+        _matrixA = new SquareMatrix(size);
+        _matrixB = new SquareMatrix(size);
+        _matrixC = new SquareMatrix(size);
 
         foreach (var child in content.GetComponentsInChildren<Transform>())
         {
@@ -52,53 +75,53 @@ public class MatrixController : MonoBehaviour
             }
         }
 
-        matrixA.InputFields = new TMP_InputField[size, size];
+        _matrixA.InputFields = new TMP_InputField[size, size];
         for (int y = 0; y < size; y++)
         {
             var row = Instantiate(rowPrefab, content).transform;
             for (int x = 0; x < size; x++)
             {
-                matrixA.InputFields[y, x] = Instantiate(fieldPrefab, row).GetComponent<TMP_InputField>();
-                matrixA.InputFields[y, x].caretColor = Color.red;
-                var c = matrixA.InputFields[y, x].colors;
+                _matrixA.InputFields[y, x] = Instantiate(fieldPrefab, row).GetComponent<TMP_InputField>();
+                _matrixA.InputFields[y, x].caretColor = Color.red;
+                var c = _matrixA.InputFields[y, x].colors;
                 c.normalColor = Color.white;
-                matrixA.InputFields[y, x].colors = c;
+                _matrixA.InputFields[y, x].colors = c;
             }
         }
-        matrixA.Write();
-        matrixB.InputFields = new TMP_InputField[size, size];
+        _matrixA.Write();
+        _matrixB.InputFields = new TMP_InputField[size, size];
         for (int y = 0; y < size; y++)
         {
             var row = Instantiate(rowPrefab, content).transform;
             for (int x = 0; x < size; x++)
             {
-                matrixB.InputFields[y, x] = Instantiate(fieldPrefab, row).GetComponent<TMP_InputField>();
-                var c = matrixB.InputFields[y, x].colors;
+                _matrixB.InputFields[y, x] = Instantiate(fieldPrefab, row).GetComponent<TMP_InputField>();
+                var c = _matrixB.InputFields[y, x].colors;
                 c.normalColor = Color.yellow;
-                matrixB.InputFields[y, x].colors = c;
+                _matrixB.InputFields[y, x].colors = c;
             }
         }
-        matrixB.Write();
-        matrixC.InputFields = new TMP_InputField[size, size];
+        _matrixB.Write();
+        _matrixC.InputFields = new TMP_InputField[size, size];
         for (int y = 0; y < size; y++)
         {
             var row = Instantiate(rowPrefab, content).transform;
             for (int x = 0; x < size; x++)
             {
-                matrixC.InputFields[y, x] = Instantiate(fieldPrefab, row).GetComponent<TMP_InputField>();
-                var c = matrixC.InputFields[y, x].colors;
+                _matrixC.InputFields[y, x] = Instantiate(fieldPrefab, row).GetComponent<TMP_InputField>();
+                var c = _matrixC.InputFields[y, x].colors;
                 c.disabledColor = Color.green;
-                matrixC.InputFields[y, x].colors = c;
-                matrixC.InputFields[y, x].interactable = false;
+                _matrixC.InputFields[y, x].colors = c;
+                _matrixC.InputFields[y, x].interactable = false;
             }
         }
-        matrixC.Write();
+        _matrixC.Write();
     }
 
     private void Multiply()
     {
-        matrixA.Read();
-        matrixB.Read();
+        _matrixA.Read();
+        _matrixB.Read();
 
         var p = new Process();
         p.StartInfo.WorkingDirectory = Application.streamingAssetsPath;
@@ -106,40 +129,73 @@ public class MatrixController : MonoBehaviour
         p.StartInfo.UseShellExecute = false;
         p.StartInfo.RedirectStandardInput = true;
         p.StartInfo.RedirectStandardOutput = true;
+        p.StartInfo.RedirectStandardError = true;
+
+        p.OutputDataReceived += OnCout;
+        p.ErrorDataReceived += OnCerr;
 
         p.Start();
-        p.StandardInput.WriteLine(matrixA.Size);
-        for (int y = 0; y < matrixA.Size; y++)
+
+        _yOut = 0;
+        _xOut = 0;
+        p.BeginOutputReadLine();
+        p.BeginErrorReadLine();
+
+        p.StandardInput.WriteLine(ipInputField.text);
+        p.StandardInput.WriteLine(portInputField.text);
+        p.StandardInput.WriteLine(_matrixA.Size);
+
+        for (int y = 0; y < _matrixA.Size; y++)
         {
-            for (int x = 0; x < matrixA[y].Count; x++)
+            for (int x = 0; x < _matrixA[y].Count; x++)
             {
-                string text = matrixA[y][x].ToString().Replace(',', '.');
+                string text = _matrixA[y][x].ToString().Replace(',', '.');
                 p.StandardInput.Write((x == 0 ? "" : " ") + text);
             }
             p.StandardInput.WriteLine();
         }
-        for (int y = 0; y < matrixB.Size; y++)
+        for (int y = 0; y < _matrixB.Size; y++)
         {
-            for (int x = 0; x < matrixB[y].Count; x++)
+            for (int x = 0; x < _matrixB[y].Count; x++)
             {
-                string text = matrixB[y][x].ToString().Replace(',', '.');
+                string text = _matrixB[y][x].ToString().Replace(',', '.');
                 p.StandardInput.Write((x == 0 ? "" : " ") + text);
             }
             p.StandardInput.WriteLine();
         }
+
         p.StandardInput.Close();
+    }
 
-        for (int y = 0; y < matrixC.Size; y++)
+    private void OnCout(object sender, DataReceivedEventArgs e)
+    {
+        if (e.Data == null)
         {
-            string line = p.StandardOutput.ReadLine();
-            double[] rowValues = line.Split(' ').Select(text => double.TryParse(text.Replace('.', ','), out double value) ? value : 0).ToArray();
-            for (int x = 0; x < matrixC[y].Count; x++)
-            {
-                matrixC[y][x] = rowValues[x];
-            }
+            return;
         }
-        p.Close();
 
-        matrixC.Write();
+        UnityEngine.Debug.Log(e.Data);
+
+        double rowValue = double.TryParse(e.Data.Replace('.', ','), out double value) ? value : 0;
+
+        _matrixC[_yOut][_xOut] = rowValue;
+
+        _xOut++;
+        if (_xOut >= _matrixC[_yOut].Count)
+        {
+            _writeResult = true;
+            _xOut = 0;
+            _yOut++;
+        }
+    }
+
+    private void OnCerr(object sender, DataReceivedEventArgs e)
+    {
+        if (e.Data == null)
+        {
+            return;
+        }
+
+        UnityEngine.Debug.LogError(e.Data);
     }
 }
