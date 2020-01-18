@@ -15,22 +15,7 @@ using namespace std;
 typedef vector<vector<double>> vvd;
 typedef vector<double> vd;
 
-double multiply_field(int i, int j, vvd &a, vvd &b) {
-  double result = 0;
-  for (int k = 0; k < (int)a.size(); ++k) {
-    result += a[i][k] * b[k][j];
-  }
-  return result;
-}
-
-vd multiply_row(int j, vvd &a, vvd &b) {
-  vd res(a.size());
-  for (int i = 0; i < (int)a.size(); ++i) {
-    res[i] = multiply_field(i, j, a, b);
-  }
-  return res;
-}
-
+// Zwykłe mnożenie macierzy
 vvd matrix_multiplication(vvd &a, vvd &b) {
   int n = a.size();
   vvd res(n, vd(n, 0));
@@ -43,6 +28,7 @@ vvd matrix_multiplication(vvd &a, vvd &b) {
   return res;
 }
 
+// Wielowątkowe mnożenie macierzy
 vvd threaded_matrix_multiplication(vvd &a, vvd &b) {
   int n = a.size();
   vvd res(n, vd(n, 0));
@@ -57,6 +43,7 @@ vvd threaded_matrix_multiplication(vvd &a, vvd &b) {
   return res;
 }
 
+// Wyciąganie macierzy z buffera
 vvd calculate_from_string(string strbuff) {
   cout << "Message size: " << strbuff.length() << endl;
   stringstream ss;
@@ -86,6 +73,7 @@ vvd calculate_from_string(string strbuff) {
   return res;
 }
 
+// Funkcja wypisująca wartość wektora, tylko do debugu
 string debug_vector(vvd vec) {
   string s = "";
   for (int j = 0; j < (int)vec.size(); j++) {
@@ -97,70 +85,53 @@ string debug_vector(vvd vec) {
   return s;
 }
 
-double eval_time(vvd (*func)(vvd &, vvd &)) {
-  vvd g(1000, vd(1000, 1));
-  vvd h(1000, vd(1000, 1));
-  struct timeval tv1, tv2;
-  struct timezone tz;
-  double elapsed;
-  gettimeofday(&tv1, &tz);
-  vvd res = func(g, h);
-  gettimeofday(&tv2, &tz);
-  elapsed = (double)(tv2.tv_sec - tv1.tv_sec) +
-            (double)(tv2.tv_usec - tv1.tv_usec) * 1.e-6;
-  return elapsed;
-}
-
 int main() {
-  // Create a socket (IPv4, TCP)
+  // Tworzymy socket (IPv4, TCP)
   int sockfd = socket(AF_INET, SOCK_STREAM, 0);
   if (sockfd == -1) {
-    cout << "Failed to create socket. errno: " << errno << endl;
-    exit(EXIT_FAILURE);
+    cout << "Problem z socketem" << errno << endl;
+    exit(1);
   }
 
-  // Listen to port 8080 on any address
+  // Proba zajęcia portu 8080
   sockaddr_in sockaddr;
   sockaddr.sin_family = AF_INET;
   sockaddr.sin_addr.s_addr = INADDR_ANY;
-  sockaddr.sin_port = htons(8080);  // htons is necessary to convert a number to
-                                    // network byte order
+  sockaddr.sin_port = htons(8080);
   if (bind(sockfd, (struct sockaddr *)&sockaddr, sizeof(sockaddr)) < 0) {
-    cout << "Failed to bind to port 8080. errno: " << errno << endl;
-    exit(EXIT_FAILURE);
+    cout << "Nie udało się dostać do portu 8080: " << errno << endl;
+    exit(1);
   }
-  cout << "Bind successful." << endl;
+  cout << "Dostałem się do portu 8080." << endl;
   while (true) {
-    // Start listening. Hold at most 10 connections in the queue
-    if (listen(sockfd, 10) < 0) {
-      cout << "Failed to listen on socket. errno: " << errno << endl;
-      exit(EXIT_FAILURE);
+    // słuchamy, najwyżej 100 połączeń na raz
+    if (listen(sockfd, 100) < 0) {
+      cout << "Nie udało się zacząć słuchać " << errno << endl;
+      exit(1);
     }
-    cout << "Listening..." << endl;
+    cout << "Słucham..." << endl;
 
-    // Grab a connection from the queue
+    // Wyciągamy połączenie z kolejki
     auto addrlen = sizeof(sockaddr);
     int connection =
         accept(sockfd, (struct sockaddr *)&sockaddr, (socklen_t *)&addrlen);
     if (connection < 0) {
-      cout << "Failed to grab connection. errno: " << errno << endl;
-      exit(EXIT_FAILURE);
+      cout << "Nie udało się wyciągnąć połączenia " << errno << endl;
+      exit(1);
     }
-    cout << "Grabbed a connection: " << connection << endl;
+    cout << "Mamy połączenie." << endl;
 
     if (fork() == 0) {
-      // Read from the connection
+      // Czytamy
       char buffer[1000000];
       auto bytesRead = read(connection, buffer, 1000000);
       if ((int)bytesRead == 0) {
-        cout << "No message inside" << endl;
+        cout << "Nie ma nic w środku" << endl;
       }
-      // cout << "The message was: " << buffer << endl;
+      // cout << buffer << endl;
 
-      cout << "Counting..." << endl;
-
+      cout << "Liczę..." << endl;
       string strbuff = buffer;
-
       vvd res = calculate_from_string(strbuff);
 
       string response = "";
@@ -170,12 +141,11 @@ int main() {
         }
       }
 
-      cout << "Counted! Sending response..." << endl;
+      cout << "Policzone! Odsyłam odpowiedź..." << endl;
       cout << response << endl;
-      // Send a message to the connection
       send(connection, response.c_str(), response.size() + 1, 0);
+      cout << "Odpowiedź odesłana." << endl;
 
-      cout << "Response sent." << endl;
       close(connection);
       exit(0);
     } else {
@@ -183,6 +153,5 @@ int main() {
     }
   }
 
-  // Close the connections
   close(sockfd);
 }
