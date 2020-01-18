@@ -1,18 +1,19 @@
 
 #include <netinet/in.h>  // For sockaddr_in
+#include <omp.h>
 #include <string.h>
 #include <sys/socket.h>  // For socket functions
-#include <unistd.h>      // For read
-// #include <boost/interprocess/shared_memory_object.hpp>
+#include <sys/time.h>
+#include <unistd.h>  // For read
 #include <cstdlib>   // For exit() and EXIT_FAILURE
 #include <iostream>  // For cout
 #include <sstream>
 #include <vector>
 
-#define vvd vector<vector<double>>
-#define vd vector<double>
-
 using namespace std;
+
+typedef vector<vector<double>> vvd;
+typedef vector<double> vd;
 
 double multiply_field(int i, int j, vvd &a, vvd &b) {
   double result = 0;
@@ -23,19 +24,36 @@ double multiply_field(int i, int j, vvd &a, vvd &b) {
 }
 
 vd multiply_row(int j, vvd &a, vvd &b) {
-  vd res;
+  vd res(a.size());
   for (int i = 0; i < (int)a.size(); ++i) {
-    res.push_back(multiply_field(i, j, a, b));
+    res[i] = multiply_field(i, j, a, b);
   }
   return res;
 }
 
 vvd matrix_multiplication(vvd &a, vvd &b) {
   int n = a.size();
-  vvd res(n, vd(n));
-  for (int j = 0; j < (int)a.size(); ++j) {
-    res[j] = (multiply_row(j, a, b));
-  }
+  vvd res(n, vd(n, 0));
+  for (int j = 0; j < (int)a.size(); ++j)
+    for (int i = 0; i < (int)a.size(); ++i)
+      for (int k = 0; k < (int)a.size(); ++k) {
+        res[i][j] += a[i][k] * b[k][j];
+      }
+
+  return res;
+}
+
+vvd threaded_matrix_multiplication(vvd &a, vvd &b) {
+  int n = a.size();
+  vvd res(n, vd(n, 0));
+  int i, j, k;
+  omp_set_num_threads(omp_get_num_procs());
+#pragma omp parallel for private(i, j, k) shared(a, b, res, n)
+  for (i = 0; i < n; ++i)
+    for (j = 0; j < n; ++j)
+      for (k = 0; k < n; ++k) {
+        res[i][j] += a[i][k] * b[k][j];
+      }
   return res;
 }
 
@@ -48,7 +66,7 @@ vvd calculate_from_string(string strbuff) {
   ss >> matrix_size;
   cout << "matrix size value: " << matrix_size << endl;
 
-  vvd a, b, res;
+  vvd a, b, res(matrix_size, vd(matrix_size, 0));
   for (int j = 0; j < matrix_size; j++) {
     a.push_back(vd());
     for (int i = 0; i < matrix_size; i++) {
@@ -64,7 +82,7 @@ vvd calculate_from_string(string strbuff) {
     }
   }
 
-  res = matrix_multiplication(a, b);
+  res = threaded_matrix_multiplication(a, b);
   return res;
 }
 
@@ -77,6 +95,20 @@ string debug_vector(vvd vec) {
     s += "\n";
   }
   return s;
+}
+
+double eval_time(vvd (*func)(vvd &, vvd &)) {
+  vvd g(1000, vd(1000, 1));
+  vvd h(1000, vd(1000, 1));
+  struct timeval tv1, tv2;
+  struct timezone tz;
+  double elapsed;
+  gettimeofday(&tv1, &tz);
+  vvd res = func(g, h);
+  gettimeofday(&tv2, &tz);
+  elapsed = (double)(tv2.tv_sec - tv1.tv_sec) +
+            (double)(tv2.tv_usec - tv1.tv_usec) * 1.e-6;
+  return elapsed;
 }
 
 int main() {
@@ -114,7 +146,7 @@ int main() {
       cout << "Failed to grab connection. errno: " << errno << endl;
       exit(EXIT_FAILURE);
     }
-    cout << "Grabbed a connection!" << endl;
+    cout << "Grabbed a connection: " << connection << endl;
 
     if (fork() == 0) {
       // Read from the connection
