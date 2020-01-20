@@ -11,8 +11,8 @@
 
 using namespace std;
 
-typedef vector<vector<double>> vvd;
-typedef vector<double> vd;
+typedef vector<vector<long double>> vvd;
+typedef vector<long double> vd;
 
 // Zwykłe mnożenie macierzy
 vvd matrix_multiplication(vvd &a, vvd &b) {
@@ -46,7 +46,7 @@ vvd threaded_matrix_multiplication(vvd &a, vvd &b) {
 vvd calculate_from_string(string strbuff) {
   cout << "Message size: " << strbuff.length() << endl;
   stringstream ss;
-  double tmp;
+  long double tmp;
   int matrix_size;
   ss << strbuff;
   ss >> matrix_size;
@@ -69,6 +69,8 @@ vvd calculate_from_string(string strbuff) {
   }
 
   res = threaded_matrix_multiplication(a, b);
+  a.clear();
+  b.clear();
   return res;
 }
 
@@ -96,7 +98,7 @@ int main() {
   sockaddr_in sockaddr;
   sockaddr.sin_family = AF_INET;
   sockaddr.sin_addr.s_addr = INADDR_ANY;
-  sockaddr.sin_port = htons(8080);
+  sockaddr.sin_port = htons(8088);
   if (bind(sockfd, (struct sockaddr *)&sockaddr, sizeof(sockaddr)) < 0) {
     cout << "Nie udało się dostać do portu 8080: " << errno << endl;
     exit(1);
@@ -122,16 +124,21 @@ int main() {
 
     if (fork() == 0) {
       // Czytamy
-      char buffer[1000000];
-      auto bytesRead = read(connection, buffer, 1000000);
-      if ((int)bytesRead == 0) {
-        cout << "Nie ma nic w środku" << endl;
+      char buffer[1000];
+      string strbuff = "";
+      int a;
+      while (true) {
+        strcpy(buffer, "");
+        a = read(connection, buffer, 1000);
+        cout << a << endl;
+        strbuff += buffer;
+        if (strbuff.find("#") != string::npos) break;
       }
-      // cout << buffer << endl;
 
       cout << "Liczę..." << endl;
-      string strbuff = buffer;
       vvd res = calculate_from_string(strbuff);
+
+      // cout << debug_vector(res) << endl;
 
       string response = "";
       for (int j = 0; j < (int)res.size(); j++) {
@@ -141,7 +148,7 @@ int main() {
       }
 
       cout << "Policzone! Odsyłam odpowiedź..." << endl;
-      cout << response << endl;
+      // cout << response << endl;
       send(connection, response.c_str(), response.size() + 1, 0);
       cout << "Odpowiedź odesłana." << endl;
 
