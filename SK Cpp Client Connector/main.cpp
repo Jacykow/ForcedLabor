@@ -28,6 +28,7 @@ int main() {
       messageStream << " " << field;
     }
   }
+  messageStream << "#";
 
   WSADATA WSAData;
   SOCKET server;
@@ -48,17 +49,16 @@ int main() {
 
   // wysyłamy wielkość macierzy i dwie macierze do pomnożenia
   string bufferString = messageStream.str();
-  char buffer[1000000];
+  char buffer[2000000];
   strcpy(buffer, bufferString.c_str());
   send(server, buffer, sizeof(buffer), 0);
 
   cerr << "receiving..." << endl;
 
   // odbieramy macierz odpowiedzi
-  char buffer2[1000000];
   stringstream responseStream;
-  recv(server, buffer2, sizeof(buffer), 0);
-  responseStream << buffer2;
+  recv(server, buffer, sizeof(buffer), 0);
+  responseStream << buffer;
 
   // zamykamy połączenie
   closesocket(server);
@@ -67,7 +67,6 @@ int main() {
   // wyświetlamy wynik
   for (int x = 0; x < matrixSize * matrixSize; x++) {
     responseStream >> field;
-    cerr << "here" << endl;
     cout << field << endl;
   }
 

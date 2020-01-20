@@ -33,7 +33,7 @@ public class MatrixController : MonoBehaviour
         {
             if (string.IsNullOrEmpty(sizeInputField.text))
             {
-                Fill(Random.Range(1, 10));
+                Fill(Random.Range(1, 20));
             }
             _matrixA.Randomize();
             _matrixB.Randomize();
